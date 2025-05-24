@@ -51,6 +51,7 @@ function validate(filePath, apiKey,fileName){
         console.log("❌", error);
         }
     }
+    return errors
 }
 //Determine location
 function location(filePath){
@@ -100,6 +101,13 @@ async function startUpload(filePath, apiKey, fileName) {
 }
 
 async function notionUpload(filePath, apiKey, fileName){
-    //Not done yet
+    const validated = validate(filePath, apiKey, fileName);
+    if (validated.length > 0) {
+    return;
+    }
+    startUpload(filePath, apiKey, fileName)
+    .then((fileID)=>{
+       //still working on this 
+    })
 }
 export { notionUpload};
