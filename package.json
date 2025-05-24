@@ -1,0 +1,21 @@
+{
+  "name": "notion-upload-js",
+  "version": "0.0.1",
+  "description": "A lightweight package to upload files—both local and remote—to Notion via the Notion API. Supports internal (local) and external (URL-based) file uploads.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Notion",
+    "Uploads",
+    "Notion",
+    "API"
+  ],
+  "author": "Michael Masarik",
+  "license": "MIT",
+  "dependencies": {
+    "mime": "^4.0.7",
+    "tmp": "^0.2.3"
+  }
+}
