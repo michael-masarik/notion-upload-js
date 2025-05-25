@@ -17,8 +17,6 @@ A lightweight JS package to upload files—both local and remote—to Notion via
 
 ## Installation
 
-Clone the repo:
-
 ```bash
 npm i notion-upload-js
 ```
@@ -39,7 +37,7 @@ console.log(uploader);
 var uploader = await notionUpload("https://example.com/image.png","external.png", NOTION_KEY);
 console.log(uploader);
 //Remove file size limit
-var uploader = await notionUpload("internal.jpg","internal.jpg", NOTION_KEY, fileSizeRestrict = false)
+var uploader = await notionUpload("internal.jpg","internal.jpg", NOTION_KEY, false)
 console.log(uploader);
 ```
 
@@ -64,7 +62,7 @@ var files_to_upload = {
         ]
     }
 
-var uploader = bulkUpload(files_to_upload, NOTION_KEY);
+var uploader = await bulkUpload(files_to_upload, NOTION_KEY);
 console.log(uploader);
 ```
 
