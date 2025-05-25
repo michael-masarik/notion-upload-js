@@ -3,7 +3,10 @@ import os from 'os';
 import { readFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path'; 
+import {externalUpload} from './external.js';
+import { internalUpload } from './internal.js';
 
+//This is the var to change if you hate all the detailed logs.
 const logging = true;
 const uploadURL = "https://api.notion.com/v1/file_uploads";
 
@@ -26,7 +29,7 @@ async function cacheMimeTypes() {
 const MIME_TYPES = await cacheMimeTypes();
 
 //Validation
-function validate(filePath, apiKey,fileName){
+function validate(filePath, apiKey,fileName, loc){
     const mimeType  = mime.getType(filePath);
     const fileExtension = mime.getExtension(fileName);
     var errors = [];
@@ -36,14 +39,17 @@ function validate(filePath, apiKey,fileName){
     if (filePath === undefined || filePath === null || filePath === '') {
         errors.push('File path is required');
     }
+    if (!mimeType) {
+    errors.push('Could not determine MIME type from file path');
+    }
     if (apiKey === undefined || apiKey === null || apiKey === '') {
         errors.push('API key is required');
     }
     if (fileName === undefined || fileName === null || fileName === '') {
         errors.push('File name is required');
     }
-    if (mime.getExtension(mimeType) =! fileExtension) {
-        errors.push('File extension does not match MIME type');
+    if (MIME_TYPES.includes(mimeType) === false) {
+        errors.push('MIME type is not supported');
     }
     if (errors.length > 0) {
         console.log("🛑 The following errors where found:")
@@ -51,17 +57,37 @@ function validate(filePath, apiKey,fileName){
         console.log("❌", error);
         }
     }
+    if (((mime.getExtension(mimeType)?.toLowerCase() || '') !== (fileExtension?.toLowerCase() || '')) && loc === "local") {
+        if (logging) {
+            console.warn(`⚠️ File extension "${fileExtension}" does not match MIME type "${mimeType}". Attempting to upload anyway.`);
+        }
+        // Don't block upload — just warn
+    }
     return errors
+    
+}
+async function getMimeTypeFromURL(url) {
+    try {
+        const response = await fetch(url, { method: 'HEAD' });
+        return response.headers.get('content-type');
+    } catch (e) {
+        console.error("Failed to fetch MIME type from URL:", e);
+        return null;
+    }
 }
 
 //Start Upload
-async function startUpload(filePath, apiKey, fileName) {
+async function startUpload(filePath, apiKey, fileName, loc) {
     if (logging) {
         console.log('Starting initial upload...');
     }
 
-    const mimeType = mime.getType(filePath);
-
+    let mimeType;
+    if (loc === "url") {
+        mimeType = await getMimeTypeFromURL(filePath);
+    } else {
+        mimeType = mime.getType(filePath);
+    }
     const response = await fetch(uploadURL, {
         method: 'POST',
         headers: {
@@ -80,7 +106,7 @@ async function startUpload(filePath, apiKey, fileName) {
 
     if (response.status === 200) {
         const fileID = result.id;
-        console.log("🚀 Upload successfully started! File ID:", fileID);
+        console.log("📡 Upload successfully started! File ID:", fileID);
         return fileID;
     } else {
         console.log("❌ Upload failed:", response.status, result);
@@ -88,11 +114,8 @@ async function startUpload(filePath, apiKey, fileName) {
     }
 }
 
-async function notionUpload(filePath, apiKey, fileName){
-    const validated = validate(filePath, apiKey, fileName);
-    if (validated.length > 0) {
-    return;
-    }
+async function notionUpload(filePath, fileName, apiKey, fileSizeRestrict = true){
+    console.log("Starting upload to Notion... If you would not like detailed logs, edit the main.js file and set the logging variable to false.")
     //Determine location
     function location(filePath){
         if (logging){
@@ -106,17 +129,26 @@ async function notionUpload(filePath, apiKey, fileName){
         }
 
     }
-    location=location(filePath);
+    var loc=location(filePath);
+    const validated = validate(filePath, apiKey, fileName,loc);
+    if (validated.length > 0) {
+    return;
+    }
+    var ID = await startUpload(filePath, apiKey, fileName, loc);
     if (logging) {
-        console.log('📍 Location:', location);
+        console.log('📍 Location:', loc);
     }
-    if (location === "url"){
-        //run the external upload function
-    }else{
-        //run the local upload function
+    let finalID;
+    if (loc === "url") {
+        finalID = await externalUpload(filePath, fileName, apiKey, ID, fileSizeRestrict);
+    } else {
+        finalID = await internalUpload(filePath, fileName, apiKey, ID, fileSizeRestrict);
     }
-    startUpload(filePath, apiKey, fileName);
 
-}
+    if (finalID == null) {
+        console.log("❌ Upload failed.");
+    }
+    return finalID;
+    }
 // Export the function
 export { notionUpload};
