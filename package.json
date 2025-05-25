@@ -1,6 +1,6 @@
 {
   "name": "notion-upload-js",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A lightweight package to upload files—both local and remote—to Notion via the Notion API. Supports internal (local) and external (URL-based) file uploads.",
   "type": "module",
   "main": "index.js",
