@@ -1,4 +1,5 @@
 .DS_Store
 Icon\?
+Icon
 node_modules
 package-lock.json
